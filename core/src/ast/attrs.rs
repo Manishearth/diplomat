@@ -24,7 +24,7 @@ use syn::{Attribute, Expr, Ident, Lit, LitStr, Meta, MetaList, Token};
 ///
 /// Each attribute here documents its inheritance behavior. Note that the HIR attributes do not get inherited
 /// during AST construction, since at that time it's unclear which of those attributes are actually available.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 #[non_exhaustive]
 pub struct Attrs {
     /// The regular #[cfg()] attributes. Inherited, though the inheritance onto methods is the
@@ -53,6 +53,26 @@ pub struct Attrs {
     ///
     /// Inherited.
     pub abi_rename: RenameAttr,
+
+    /// The "method version", used to have stable C ABI even with changing method signatures.
+    ///
+    /// Defaults to 1
+    ///
+    /// Inherited. Only makes sense on methods.
+    // In the future we might turn this into a Cow<'static, str> if people want fancy method versions.
+    pub method_version: u8,
+}
+
+impl Default for Attrs {
+    fn default() -> Self {
+        Self {
+            cfg: Vec::new(),
+            attrs: Vec::new(),
+            skip_if_ast: false,
+            abi_rename: RenameAttr::default(),
+            method_version: 1,
+        }
+    }
 }
 
 impl Attrs {
@@ -62,6 +82,7 @@ impl Attrs {
             Attr::DiplomatBackend(attr) => self.attrs.push(attr),
             Attr::SkipIfAst => self.skip_if_ast = true,
             Attr::CRename(rename) => self.abi_rename.extend(&rename),
+            Attr::MethodVersion(v) => self.method_version = v,
         }
     }
 
@@ -86,6 +107,8 @@ impl Attrs {
             attrs,
             // HIR only, for methods only. not inherited
             skip_if_ast: false,
+            // Always inherited, only makes sense on methods
+            method_version: self.method_version,
             abi_rename,
         }
     }
@@ -113,6 +136,7 @@ enum Attr {
     DiplomatBackend(DiplomatBackendAttr),
     SkipIfAst,
     CRename(RenameAttr),
+    MethodVersion(u8),
     // More goes here
 }
 
@@ -121,6 +145,7 @@ fn syn_attr_to_ast_attr(attrs: &[Attribute]) -> impl Iterator<Item = Attr> + '_ 
     let dattr_path: syn::Path = syn::parse_str("diplomat::attr").unwrap();
     let crename_attr: syn::Path = syn::parse_str("diplomat::abi_rename").unwrap();
     let skipast: syn::Path = syn::parse_str("diplomat::skip_if_ast").unwrap();
+    let method_version: syn::Path = syn::parse_str("diplomat::method_version").unwrap();
     attrs.iter().filter_map(move |a| {
         if a.path() == &cfg_path {
             Some(Attr::Cfg(a.clone()))
@@ -133,6 +158,13 @@ fn syn_attr_to_ast_attr(attrs: &[Attribute]) -> impl Iterator<Item = Attr> + '_ 
             Some(Attr::CRename(RenameAttr::from_meta(&a.meta).unwrap()))
         } else if a.path() == &skipast {
             Some(Attr::SkipIfAst)
+        } else if a.path() == &method_version {
+            let lit: syn::LitInt = a
+                .parse_args()
+                .expect("Failed to parse malformed diplomat::method_version");
+            Some(Attr::MethodVersion(lit.base10_parse().expect(
+                "Failed to parse malformed diplomat::method_version",
+            )))
         } else {
             None
         }
@@ -163,6 +195,8 @@ impl Serialize for Attrs {
         if !self.abi_rename.is_empty() {
             state.serialize_field("abi_rename", &self.abi_rename)?;
         }
+
+        state.serialize_field("method_version", &self.method_version)?;
         state.end()
     }
 }
