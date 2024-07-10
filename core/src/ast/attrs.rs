@@ -417,6 +417,16 @@ struct RenamePattern {
     /// The index in `replacement` in which to insert the original string. If None,
     /// this is a pure rename
     insertion_index: Option<usize>,
+
+    /// The index of {method_version}
+    mv_index: Option<usize>,
+
+    /// The index of {type}
+    ty_index: Option<usize>,
+
+
+    /// The index of {method}
+    method_index: Option<usize>,
 }
 
 /// Helper type for parsing standard attributes. A standard attribute typically will accept the forms:
