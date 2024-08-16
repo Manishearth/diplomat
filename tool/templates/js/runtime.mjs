@@ -72,6 +72,26 @@ export function maybePaddingFields(needsPaddingFields, paddingCount) {
 }
 
 /** 
+ * Given a nullable type, convert it to an array of values suitable for passing
+ * down to a wasm function in a way that will be correctly interpreted as a DiplomatOption
+ * 
+ * @param {nullable} The nullable JS type
+ * @param {conversionCallback} A callback that converts the type into a field or an array spread operation
+ * @param {splatSize} The number of wasm parameters needed by the converted nullable (not counting the DiplomatOption isOk field)
+*/
+export function enumDiscriminant(nullable, conversionCallback, splatSize) {
+    // nullish check; this checks for null and undefined
+    if (nullable == null) {
+        let arr = [];
+        // This makes an array with splatSize empty entries followed by the isOk field of false.
+        arr[splatSize] = false;
+        return arr;
+    } else {
+        return [conversionCallback(nullable), true];
+    }
+}
+
+/** 
  * A wrapper around a slice of WASM memory that can be freed manually or
  * automatically by the garbage collector.
  *
