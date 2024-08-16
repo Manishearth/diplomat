@@ -6,6 +6,7 @@ use std::borrow::Cow;
 use diplomat_core::hir::{
     self, borrowing_param::StructBorrowInfo, LifetimeEnv, Method, OpaqueOwner, PrimitiveType,
     ReturnType, ReturnableStructDef, SelfType, StructPathLike, SuccessType, TyPosition, Type,
+    TypeDef,
 };
 use std::fmt::Write;
 
@@ -557,6 +558,38 @@ impl<'jsctx, 'tcx> TyGenContext<'jsctx, 'tcx> {
             // We use spread syntax to avoid a complicated array setup.
             SelfType::Struct(..) => "...this._intoFFI()".into(),
             _ => unreachable!("Unknown AST/HIR variant {:?}", ty),
+        }
+    }
+
+    /// When passed to a wasm function, how many parameters does this produce?
+    ///
+    /// Useful for figuring out how many parameters to skip in the DiplomatOption None case.
+    pub(super) fn js_to_c_param_count<P: TyPosition>(&self, ty: &Type<P>) -> u32 {
+        match *ty {
+            // Primitives, enums, and opaques get passed as integers
+            Type::Primitive(..) | Type::Enum(..) | Type::Opaque(..) => 1,
+            // Slices are ptr, dst
+            Type::Slice(..) => 2,
+
+            Type::Struct(ref st) => {
+                let id = st.id();
+                let def = self.tcx.resolve_type(id);
+                match def {
+                    TypeDef::Struct(ref s) => s
+                        .fields
+                        .iter()
+                        .map(|f| self.js_to_c_param_count(&f.ty))
+                        .sum(),
+                    TypeDef::OutStruct(ref s) => s
+                        .fields
+                        .iter()
+                        .map(|f| self.js_to_c_param_count(&f.ty))
+                        .sum(),
+                    _ => unreachable!("Found struct reference that did not resolve to struct def"),
+                }
+            }
+
+            _ => unreachable!("Unknown AST/HIR variant {ty:?}"),
         }
     }
 
