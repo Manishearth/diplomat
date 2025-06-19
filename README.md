@@ -8,7 +8,7 @@ Diplomat supports generating bindings from Rust to:
 - Javascript/Typescript
 - Kotlin (using JNA)
 - Python (using [nanobind](https://nanobind.readthedocs.io/en/latest/index.html))
-
+aaa
 Diplomat supports languages through a plugin interface that makes it easy to add support for your favourite language. See [the book to get started](https://rust-diplomat.github.io/diplomat/developer.html), and `tool/src/{c, cpp, js}` for examples of existing language plugins.
 
 ## Installation
