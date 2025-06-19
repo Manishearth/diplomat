@@ -23,7 +23,7 @@ diplomat = "0.10.0"
 diplomat-runtime = "0.10.0"
 ```
 
-## Getting Started
+## Getting Startedaaaa
 
 Documentation on how to use Diplomat can be found [in the book](https://rust-diplomat.github.io/diplomat/).
 
