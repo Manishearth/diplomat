@@ -32,15 +32,18 @@
 
 extern crate alloc;
 
-use alloc::alloc::Layout;
-
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 mod wasm_glue;
 
+pub mod ffi;
+
 mod write;
 pub use write::DiplomatWrite;
-pub use write::{
-    diplomat_buffer_write_create, diplomat_buffer_write_destroy, diplomat_simple_write,
+// TODO(#958): Remove these top-level re-exports in 1.0
+#[doc(hidden)]
+pub use ffi::{
+    diplomat_alloc, diplomat_buffer_write_create, diplomat_buffer_write_destroy, diplomat_free,
+    diplomat_is_str, diplomat_owned_slice_u8_destroy, diplomat_simple_write,
 };
 mod slices;
 pub use slices::{
@@ -93,54 +96,3 @@ pub type DiplomatStr16 = [u16];
 /// This matters for languages like JavaScript or Dart, where there's only a single numeric
 /// type, but special types for byte buffers.
 pub type DiplomatByte = u8;
-
-/// Allocates a buffer of a given size in Rust's memory.
-///
-/// Primarily to be called by generated FFI bindings, not Rust code, but is available if needed.
-///
-/// # Safety
-/// - The allocated buffer must be freed with [`diplomat_free()`].
-#[no_mangle]
-pub unsafe extern "C" fn diplomat_alloc(size: usize, align: usize) -> *mut u8 {
-    alloc::alloc::alloc(Layout::from_size_align(size, align).unwrap())
-}
-
-/// Frees a buffer that was allocated in Rust's memory.
-///
-/// Primarily to be called by generated FFI bindings, not Rust code, but is available if needed.
-///
-/// # Safety
-/// - `ptr` must be a pointer to a valid buffer allocated by [`diplomat_alloc()`].
-#[no_mangle]
-pub unsafe extern "C" fn diplomat_free(ptr: *mut u8, size: usize, align: usize) {
-    alloc::alloc::dealloc(ptr, Layout::from_size_align(size, align).unwrap())
-}
-
-/// Frees a `Box<[u8]>` that was returned across FFI as a raw `(ptr, len)`
-/// pair (e.g. via `DiplomatOwnedSlice<u8>`).
-///
-/// Primarily to be called by generated FFI bindings, not Rust code, but is available if needed.
-///
-/// # Safety
-/// - `ptr`/`len` must be the raw parts of a `Box<[u8]>` that Rust allocated and handed across
-///   FFI; this reconstructs that box and drops it, so the same allocator that made it frees it.
-/// - Must not be called more than once for the same `ptr`.
-#[no_mangle]
-pub unsafe extern "C" fn diplomat_owned_slice_u8_destroy(ptr: *mut u8, len: usize) {
-    if !ptr.is_null() {
-        drop(alloc::boxed::Box::from_raw(
-            core::ptr::slice_from_raw_parts_mut(ptr, len),
-        ));
-    }
-}
-
-/// Whether a `&[u8]` is a `&str`.
-///
-/// Primarily to be called by generated FFI bindings, not Rust code, but is available if needed.
-///
-/// # Safety
-/// - `ptr` and `size` must be a valid `&[u8]`
-#[no_mangle]
-pub unsafe extern "C" fn diplomat_is_str(ptr: *const u8, size: usize) -> bool {
-    core::str::from_utf8(core::slice::from_raw_parts(ptr, size)).is_ok()
-}

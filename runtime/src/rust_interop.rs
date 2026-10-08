@@ -8,8 +8,7 @@
 //! yourself wanting to work with the Diplomat-wrapped library from Rust. This module contains
 //! utilities for doing that.
 
-use crate::diplomat_buffer_write_create;
-use crate::diplomat_buffer_write_destroy;
+use crate::ffi::{diplomat_buffer_write_create, diplomat_buffer_write_destroy};
 use crate::DiplomatWrite;
 use core::borrow::Borrow;
 
