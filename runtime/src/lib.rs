@@ -29,12 +29,20 @@
 //!
 //! The `jvm-callback-support` feature should be enabled if building Diplomat for use in the JVM, for
 //! a Diplomat-based library that uses callbacks.
+//!
+//! The `wasm-glue` feature enables WebAssembly JS glue (`diplomat_init()` for panic and log routing).
+//! Currently this is also enabled automatically on `wasm32-unknown-unknown` for backwards compatibility,
+//! which will be removed in `diplomat-runtime` 1.0.
 
 extern crate alloc;
 
 use alloc::alloc::Layout;
 
-#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+// TODO(#1241): Remove `target_os = "unknown"` fallback in 1.0 so `wasm_glue` is strictly feature-gated.
+#[cfg(all(
+    target_arch = "wasm32",
+    any(feature = "wasm-glue", target_os = "unknown")
+))]
 mod wasm_glue;
 
 mod write;

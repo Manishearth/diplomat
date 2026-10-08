@@ -19,6 +19,7 @@ path = "src/lib.rs"
 [features]
 jvm-callback-support = ["dep:jni"]
 log = ["dep:log"]
+wasm-glue = []
 
 [dependencies]
 jni = { version  = "0.22", optional = true }

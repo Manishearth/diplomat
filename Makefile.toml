@@ -638,7 +638,15 @@ toolchain = "stable"
 description = "Build feature_tests for wasm"
 category = "Plumbing"
 command = "cargo"
-args = ["build", "-p", "diplomat-example", "--target", "wasm32-unknown-unknown"]
+args = [
+    "build",
+    "-p",
+    "diplomat-example",
+    "--target",
+    "wasm32-unknown-unknown",
+    "--features",
+    "diplomat-runtime/wasm-glue",
+]
 
 [tasks.build-feature-wasm]
 toolchain = "stable"
@@ -651,6 +659,8 @@ args = [
     "diplomat-feature-tests",
     "--target",
     "wasm32-unknown-unknown",
+    "--features",
+    "diplomat-runtime/wasm-glue",
 ]
 
 [tasks.build-example-jvm]
