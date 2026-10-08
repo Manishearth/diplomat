@@ -28,8 +28,8 @@ use core::{fmt, ptr};
 /// Instances of [`DiplomatWrite`] can be created from multiple different sources.
 /// There are two constructors available in `diplomat_runtime`:
 ///
-/// 1. [`diplomat_simple_write()`] to write to a fixed-size buffer.
-/// 2. [`diplomat_buffer_write_create()`] to write to a Vec allocated by Rust.
+/// 1. [`diplomat_simple_write()`](crate::ffi::diplomat_simple_write) to write to a fixed-size buffer.
+/// 2. [`diplomat_buffer_write_create()`](crate::ffi::diplomat_buffer_write_create) to write to a Vec allocated by Rust.
 ///    A wrapper is provided: [`RustWriteVec`](crate::rust_interop::RustWriteVec).
 ///
 /// Backends may have additional constructors for writing to various shapes of buffer.
@@ -53,7 +53,7 @@ use core::{fmt, ptr};
 ///
 /// Diplomat backends guarantee they will only ever hand the same type of `DiplomatWrite` object to Rust
 /// code; this is only something you need to worry about if using [`RustWriteVec`](crate::rust_interop::RustWriteVec),
-/// or `DiplomatWrite` objects manually created in Rust via APIs like `diplomat_simple_write`.
+/// or `DiplomatWrite` objects manually created in Rust via APIs like [`diplomat_simple_write`](crate::ffi::diplomat_simple_write).
 ///
 /// # Safety invariants:
 ///  - `flush()` and `grow()` will be passed `self` including `context` and it should always be safe to do so.
@@ -231,8 +231,8 @@ pub extern "C" fn diplomat_buffer_write_create(cap: usize) -> *mut DiplomatWrite
 /// - `this` must be a pointer to a valid [`DiplomatWrite`] constructed by
 ///   [`diplomat_buffer_write_create()`].
 #[no_mangle]
-pub extern "C" fn diplomat_buffer_write_get_bytes(this: *mut DiplomatWrite) -> *mut u8 {
-    let this = unsafe { &*this };
+pub unsafe extern "C" fn diplomat_buffer_write_get_bytes(this: *mut DiplomatWrite) -> *mut u8 {
+    let this = &*this;
     if this.grow_failed {
         core::ptr::null_mut()
     } else {
